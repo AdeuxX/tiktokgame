@@ -28,7 +28,7 @@ CIRCLE_COLOR = (255, 255, 255)
 
 # Paramètres de l'arc tournant
 ARC_ROTATION_SPEED = math.radians(30)  # 30°/s convertis en radians/s
-ARC_ANGLE_SPAN = math.radians(340)     # 80% de 360° (288°) en radians
+ARC_ANGLE_SPAN = math.radians(345)     # 80% de 360° (288°) en radians
 ARC_WIDTH = 5
 
 # Boule mobile
@@ -71,7 +71,7 @@ game_over = False                     # Indique si le jeu est terminé
 winner = None                         # Variable pour stocker le gagnant
 
 post_game_counter = 0
-post_game_duration = 3
+post_game_duration = 11
 frames = []
 
 #Firework images
@@ -178,7 +178,7 @@ def update_physics(dt):
         arc.radius -= (delta*0.1*20) * dt  # Diminution du rayon
 
     # Mise à jour du compteur
-    counter_increment = 90 / 12  # Incrément pour atteindre 90 en 51 secondes
+    counter_increment = 90 / 51  # Incrément pour atteindre 90 en 51 secondes
     counter += counter_increment * dt
     if counter >= 90:
         counter = 90
@@ -229,6 +229,7 @@ def draw():
     # Affichage du message de victoire
     if game_over:
                 # Affichage de l'animation de feu d'artifice
+                
         if firework_images:
             screen.blit(firework_images[int(current_firework_frame)], (0, 0))
         winner_text = f"Victoire de l'équipe"
@@ -238,9 +239,7 @@ def draw():
         draw_text_with_outline(screen, winner2_text, font, (255, 255, 0), (0, 0, 0), SCREEN_SIZE[0] // 2, SCREEN_SIZE[1] // 2 + 50)
         draw_text_with_outline(screen, score_texte, font, (255, 255, 0), (0, 0, 0), SCREEN_SIZE[0] // 2, SCREEN_SIZE[1] // 2 + 100)
 
-        # Affichage de l'animation de feu d'artifice
-        if firework_images:
-            screen.blit(firework_images[int(current_firework_frame)], (0, 0))
+
 
     # Capturer la frame actuelle
     frame = pygame.surfarray.array3d(screen)
@@ -286,20 +285,14 @@ if __name__ == "__main__":
         audio_clips_with_silence = []
         compteur = 0
         for i, clip_path in sound_events:
-
-
             temps_fin_precedent = int((sound_events[compteur-1][0]+1+1.4)*10) if compteur >= 1 else 1*10
             end_int = int((1+i)*10)
-            print("iciiii", AudioFileClip(clip_path).duration)
-            print(compteur, temps_fin_precedent, end_int)
             compteur +=1
             for j in range(temps_fin_precedent, end_int, int(0.1*10)):
                 audio_clips_with_silence.append(silence_clip)
             audio_clips_with_silence.append(AudioFileClip(clip_path).subclipped(0, 1.4))
         final_audio = concatenate_audioclips(audio_clips_with_silence)
-        
-        # audio_clips[0].write_audiofile(output_path.replace('.mp4', '.mp3'), codec='aac')
-        final_audio.write_audiofile(output_path.replace('.mp4', '.mp3'))
+
         # Ajouter l'audio composite au clip vidéo
         final_clip = clip.with_audio(final_audio)
 
@@ -308,7 +301,6 @@ if __name__ == "__main__":
 
         # Fermer les clips
         clip.close()
-        final_audio.close()
 
     pygame.quit()
     sys.exit()

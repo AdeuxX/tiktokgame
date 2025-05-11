@@ -1,5 +1,8 @@
 import pygame
 
+heart_image = pygame.image.load('images_png\heart.png')  # Remplacez par le chemin de votre image de cœur
+heart_image = pygame.transform.scale(heart_image, (30, 30))  # Redimensionnez l'image si nécessaire
+
 def draw_text(text, font, color, x, y):
     textobj = font.render(text, True, color)
     textrect = textobj.get_rect()
@@ -21,7 +24,7 @@ def draw_text_with_outline(screen, text, font, color, outline_color, x, y):
     text_rect = text_surface.get_rect(center=(x, y))
     screen.blit(text_surface, text_rect)
 
-def draw_health(screen, ball, x, y):
+def draw_health(screen, ball,screen_size):
     """
     Dessine le nombre de vies restantes pour une balle donnée.
 
@@ -30,8 +33,10 @@ def draw_health(screen, ball, x, y):
     :param x: Position x pour le dessin.
     :param y: Position y pour le dessin.
     """
-    font = pygame.font.Font(None, 36)  # Police par défaut, taille 36
-
     # Affichage du nombre de vies restantes
-    health_text = f"Hearts: {ball.life}"
-    draw_text_with_outline(screen, health_text, font, (255, 255, 255), (0, 0, 0), x, y)
+    if ball.name == 'blue':
+        for i in range(ball.life):
+            screen.blit(heart_image, (5, 5 + i * 35))  # Dessinez les cœurs en haut à gauche pour la balle bleue
+    elif ball.name == 'red':
+        for i in range(ball.life):
+            screen.blit(heart_image, (screen_size[0]-35, 5 + i * 35)) # Dessinez les cœurs en haut à droite pour la balle rouge

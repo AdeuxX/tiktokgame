@@ -32,8 +32,8 @@ ARC_WIDTH = 5
 # Boule mobile
 BALL_RADIUS = 30
 BALL_COLOR = (255, 255, 255)
-GRAVITY = 800                      # px/s²
-BOUNCE_RESTITUTION = 1.05
+GRAVITY = 500                      # px/s²
+BOUNCE_RESTITUTION = 1
 
 # Traînée
 TRAIL_LENGTH = 10
@@ -131,6 +131,9 @@ def update_physics(dt):
     global balls, arc_angle_start, compteur_destroyed_arc,last_bonus_time,bonuses, compteur_rebond, game_start_time, game_over_time_remaining, game_over, winner, compteur_destroyed_arc_red, compteur_destroyed_arc_blue, counter, current_firework_frame
 
     if game_over:
+        current_firework_frame += firework_animation_speed
+        if current_firework_frame >= len(firework_images):
+            current_firework_frame = 0
         game_over_time_remaining -= dt
         if game_over_time_remaining <= 0:
             return False  # Indique que le jeu est terminé et prêt pour l'enregistrement
@@ -202,7 +205,7 @@ def draw():
 
     for ball in balls:
         ball.draw(screen)
-        draw_health(screen, ball, ball.pos[0], ball.pos[1] - 40)
+        draw_health(screen, ball, SCREEN_SIZE)
 
     for bonus in bonuses:
         if bonus.active:
@@ -219,6 +222,8 @@ def draw():
 
     # Affichage du message de victoire
     if game_over:
+        if firework_images:
+            screen.blit(firework_images[int(current_firework_frame)], (0, 0))
         winner_text = f"Victoire de l'équipe"
         winner2_text = f"{winner}"
         score_texte = f"{compteur_destroyed_arc_blue} - {compteur_destroyed_arc_red}"
