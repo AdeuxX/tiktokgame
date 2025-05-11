@@ -6,6 +6,9 @@ import sys
 import math
 import random
 import os
+import time
+import numpy as np
+from moviepy import ImageSequenceClip
 
 # ---------------------------
 # Constantes globales
@@ -22,7 +25,7 @@ CIRCLE_COLOR = (255, 255, 255)
 
 # Paramètres de l'arc tournant
 ARC_ROTATION_SPEED = math.radians(30)  # 30°/s convertis en radians/s
-ARC_ANGLE_SPAN = math.radians(345)     # 80% de 360° (288°) en radians
+ARC_ANGLE_SPAN = math.radians(340)     # 80% de 360° (288°) en radians
 ARC_WIDTH = 5
 
 # Boule mobile
@@ -59,10 +62,20 @@ winner = None                         # Variable pour stocker le gagnant
 firework_images = []
 current_firework_frame = 0
 firework_animation_speed = 0.5  # Vitesse de l'animation en secondes par image
+# Charger le fichier MP3
+pygame.mixer.init()
+pygame.mixer.music.load('UEFA Champions League official theme song (Hymne) Stereo HD (mp3cut.net).mp3')  # Remplacez par le chemin de votre fichier MP3
+# Variables pour le nouveau chronomètre
+post_game_counter = 0
+post_game_duration = 10
+# Jouer la musique en boucle
+pygame.mixer.music.play(-1)
 # Noms des équipes
 CHOIX_1 = "INTER"
 CHOIX_2 = "PSG"
 
+# Liste pour stocker les frames capturées
+frames = []
 # Classe Arc
 class Arc:
     def __init__(self, radius, angle_start, radius_speed):
@@ -183,13 +196,17 @@ def init():
 # Mise à jour physique (partie corrigée)
 # ---------------------------
 def update_physics(dt):
-    global balls, arc_angle_start, arc, compteur_destroyed_arc, compteur_rebond, compteur_destroyed_arc_red, compteur_destroyed_arc_blue, counter, game_over, winner, current_firework_frame
+    global balls, arc_angle_start, arc, compteur_destroyed_arc, compteur_rebond, compteur_destroyed_arc_red, compteur_destroyed_arc_blue, counter, game_over, winner, current_firework_frame, post_game_counter, post_game_duration
 
     if game_over:
         current_firework_frame += firework_animation_speed
         if current_firework_frame >= len(firework_images):
             current_firework_frame = 0
-        return
+
+        post_game_counter += dt
+        if post_game_counter >= post_game_duration:
+            return False  # Indique que le jeu est terminé et prêt pour l'enregistrement
+        return True
 
     balls_to_remove = []
     new_balls = []
@@ -285,7 +302,7 @@ def update_physics(dt):
         arc.radius -= (delta*0.1*20) * dt  # Diminution du rayon
 
     # Mise à jour du compteur
-    counter_increment = 90 / 51  # Incrément pour atteindre 90 en 61 secondes
+    counter_increment = 90 / 51  # Incrément pour atteindre 90 en 51 secondes
     counter += counter_increment * dt
     if counter >= 90:
         counter = 90
@@ -299,6 +316,7 @@ def update_physics(dt):
             winner = "Match nul"
 
         print(f"Victoire de l'équipe {winner}")
+    return True
 
 # ---------------------------
 # Dessin des éléments
@@ -371,12 +389,12 @@ def draw():
         screen.blit(text_surface, text_rect)
 
     # Affichage du nom et du score de l'équipe 1
-    draw_text_with_outline(screen, f"{CHOIX_1}", font, (0, 0, 255), (255, 255, 255), SCREEN_SIZE[0] // 4, SCREEN_SIZE[1] // 3 - 150)
-    draw_text_with_outline(screen, f"{compteur_destroyed_arc_blue}", font, (0, 0, 255), (255, 255, 255), SCREEN_SIZE[0] // 4, SCREEN_SIZE[1] // 3 + 50 - 150)
+    draw_text_with_outline(screen, f"{CHOIX_1}", font, (0, 128, 255), (255, 255, 255), SCREEN_SIZE[0] // 4, SCREEN_SIZE[1] // 3 - 150)
+    draw_text_with_outline(screen, f"{compteur_destroyed_arc_blue}", font, (0, 128, 255), (255, 255, 255), SCREEN_SIZE[0] // 4, SCREEN_SIZE[1] // 3 + 50 - 150)
 
     # Affichage du nom et du score de l'équipe 2
-    draw_text_with_outline(screen, f"{CHOIX_2}", font, (255, 0, 0), (255, 255, 255), 3 * SCREEN_SIZE[0] // 4, SCREEN_SIZE[1] // 3 - 150)
-    draw_text_with_outline(screen, f"{compteur_destroyed_arc_red}", font, (255, 0, 0), (255, 255, 255), 3 * SCREEN_SIZE[0] // 4, SCREEN_SIZE[1] // 3 + 50 - 150)
+    draw_text_with_outline(screen, f"{CHOIX_2}", font, (229, 53, 23), (255, 255, 255), 3 * SCREEN_SIZE[0] // 4, SCREEN_SIZE[1] // 3 - 150)
+    draw_text_with_outline(screen, f"{compteur_destroyed_arc_red}", font, (229, 53, 23), (255, 255, 255), 3 * SCREEN_SIZE[0] // 4, SCREEN_SIZE[1] // 3 + 50 - 150)
 
     # Affichage du chronomètre
     draw_text_with_outline(screen, f"{int(counter)}'", font, (255, 255, 255), (0, 0, 0), SCREEN_SIZE[0] // 2, SCREEN_SIZE[1] // 3 - 195)
@@ -393,6 +411,11 @@ def draw():
                 # Affichage de l'animation de feu d'artifice
         if firework_images:
             screen.blit(firework_images[int(current_firework_frame)], (0, 0))
+    
+    # Capturer la frame actuelle
+    frame = pygame.surfarray.array3d(screen)
+    frame = np.transpose(frame, (1, 0, 2))
+    frames.append(frame)
 
 
 # ---------------------------
@@ -403,21 +426,22 @@ if __name__ == "__main__":
 
     running = True
     while running:
-        # Gestion des événements
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        # Contrôle du taux de rafraîchissement
         dt = clock.tick(FPS) / 1000.0
-
-        # Mise à jour physique
-        update_physics(dt)
-
-        # Rendu graphique
+        running = update_physics(dt)
         draw()
         pygame.display.flip()
 
-    # Nettoyage final
+    # Arrêter la musique
+    pygame.mixer.music.stop()
+
+    # Sauvegarder les frames en tant que vidéo
+    if frames:
+        clip = ImageSequenceClip(frames, fps=FPS)
+        clip.write_videofile("output.mp4", audio='UEFA Champions League official theme song (Hymne) Stereo HD (mp3cut.net).mp3')
+
     pygame.quit()
     sys.exit()
